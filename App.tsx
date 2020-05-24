@@ -1,117 +1,141 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * Generated with the TypeScript template
- * https://github.com/react-native-community/react-native-template-typescript
- *
- * @format
- */
-
-import React from 'react';
+import React, {useRef, useState} from 'react';
 import {
+  Dimensions,
+  Image,
   SafeAreaView,
   StyleSheet,
-  ScrollView,
-  View,
-  Text,
   StatusBar,
+  Text,
+  View,
 } from 'react-native';
+import {BLACK, EMPTY, WHITE} from './symbols';
+import {BlackPiece, Piece, WhitePiece} from './pieces';
+import BoardQueryer from './BoardQueryer';
 
-import {
-  Header,
-  LearnMoreLinks,
-  Colors,
-  DebugInstructions,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+const boardImage = require('./board.png');
 
-declare const global: {HermesInternal: null | {}};
+const defaultBoard: Record<string, symbol> = {
+  a1: EMPTY,
+  d1: WHITE,
+  g1: EMPTY,
+  b2: BLACK,
+  d2: WHITE,
+  f2: BLACK,
+  c3: EMPTY,
+  d3: EMPTY,
+  e3: WHITE,
+  a4: EMPTY,
+  b4: BLACK,
+  c4: BLACK,
+  e4: WHITE,
+  f4: BLACK,
+  g4: EMPTY,
+  c5: EMPTY,
+  d5: EMPTY,
+  e5: WHITE,
+  b6: EMPTY,
+  d6: EMPTY,
+  f6: BLACK,
+  a7: EMPTY,
+  d7: EMPTY,
+  g7: BLACK,
+};
+
+interface PlaceholderState {
+  color: symbol | null;
+  position: string | null;
+}
 
 const App = () => {
+  const boardRef = useRef(null);
+  const boardPosition = useRef({x: 0, y: 0}).current;
+  const [boardState] = useState(defaultBoard);
+  const [
+    {color: placeholderColor, position: placeholderPosition},
+    setPlaceholderState,
+  ] = useState<PlaceholderState>({color: null, position: null});
+
+  const {height: windowHeight, width: windowWidth} = Dimensions.get('window');
+  const boardSize = Math.min(windowHeight, windowWidth);
+
+  const board = new BoardQueryer({
+    boardPosition,
+    boardSize,
+    boardState,
+  });
+
+  const updateBoardPosition = (
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    pageX: number,
+    pageY: number,
+  ) => {
+    boardPosition.x = pageX;
+    boardPosition.y = pageY;
+  };
+
   return (
     <>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <SafeAreaView>
-        <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
-          style={styles.scrollView}>
-          <Header />
-          {global.HermesInternal == null ? null : (
-            <View style={styles.engine}>
-              <Text style={styles.footer}>Engine: Hermes</Text>
-            </View>
+        <Text style={styles.title}>Nine Men’s Morris</Text>
+        <View
+          onLayout={() =>
+            (boardRef.current as any)?.measure(updateBoardPosition)
+          }
+          ref={boardRef}>
+          <Board boardSize={boardSize}>
+            {board.blackPositions.map((pos) => (
+              <BlackPiece key={pos} board={board} position={pos} />
+            ))}
+            {board.whitePositions.map((pos) => (
+              <WhitePiece key={pos} board={board} position={pos} />
+            ))}
+          </Board>
+          {placeholderColor && placeholderPosition && (
+            <Piece
+              board={board}
+              color={placeholderColor}
+              placeholder
+              position={placeholderPosition}
+            />
           )}
-          <View style={styles.body}>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Step One</Text>
-              <Text style={styles.sectionDescription}>
-                Edit <Text style={styles.highlight}>App.tsx</Text> to change
-                this screen and then come back to see your edits.
-              </Text>
-            </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>See Your Changes</Text>
-              <Text style={styles.sectionDescription}>
-                <ReloadInstructions />
-              </Text>
-            </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Debug</Text>
-              <Text style={styles.sectionDescription}>
-                <DebugInstructions />
-              </Text>
-            </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Learn More</Text>
-              <Text style={styles.sectionDescription}>
-                Read the docs to discover what to do next:
-              </Text>
-            </View>
-            <LearnMoreLinks />
-          </View>
-        </ScrollView>
+        </View>
+        <BlackPiece board={board} movable onHover={setPlaceholderState} />
       </SafeAreaView>
     </>
   );
 };
 
+const Board = ({
+  boardSize,
+  children,
+}: {
+  boardSize: number;
+  children: React.ReactNode;
+}) => (
+  <View>
+    <Image
+      source={boardImage}
+      style={[styles.board, {height: boardSize, width: boardSize}]}
+    />
+    {children}
+  </View>
+);
+
 const styles = StyleSheet.create({
-  scrollView: {
-    backgroundColor: Colors.lighter,
+  board: {
+    resizeMode: 'contain',
   },
-  engine: {
-    position: 'absolute',
-    right: 0,
+  placeholderPiece: {
+    opacity: 0.5,
   },
-  body: {
-    backgroundColor: Colors.white,
-  },
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: Colors.black,
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-    color: Colors.dark,
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-  footer: {
-    color: Colors.dark,
-    fontSize: 12,
-    fontWeight: '600',
-    padding: 4,
-    paddingRight: 12,
-    textAlign: 'right',
+  title: {
+    fontSize: 16,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
   },
 });
 
