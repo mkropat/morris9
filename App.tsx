@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import {BLACK, EMPTY, WHITE} from './symbols';
-import {BlackPiece, Piece, WhitePiece} from './pieces';
+import {BlackPiece, Piece, pieceSizePx, WhitePiece} from './pieces';
 import BoardQueryer from './BoardQueryer';
 
 const boardImage = require('./board.png');
@@ -50,6 +50,7 @@ const App = () => {
   const boardRef = useRef(null);
   const boardPosition = useRef({x: 0, y: 0}).current;
   const [boardState] = useState(defaultBoard);
+  const [numPieces] = useState(9);
   const [
     {color: placeholderColor, position: placeholderPosition},
     setPlaceholderState,
@@ -88,10 +89,18 @@ const App = () => {
           ref={boardRef}>
           <Board boardSize={boardSize}>
             {board.blackPositions.map((pos) => (
-              <BlackPiece key={pos} board={board} position={pos} />
+              <BlackPiece
+                key={pos}
+                board={board}
+                xy={board.xyForPosition(pos)}
+              />
             ))}
             {board.whitePositions.map((pos) => (
-              <WhitePiece key={pos} board={board} position={pos} />
+              <WhitePiece
+                key={pos}
+                board={board}
+                xy={board.xyForPosition(pos)}
+              />
             ))}
           </Board>
           {placeholderColor && placeholderPosition && (
@@ -99,15 +108,49 @@ const App = () => {
               board={board}
               color={placeholderColor}
               placeholder
-              position={placeholderPosition}
+              xy={board.xyForPosition(placeholderPosition)}
             />
           )}
         </View>
-        <BlackPiece board={board} movable onHover={setPlaceholderState} />
+        <PieceTray>
+          {range(numPieces).map((i) => (
+            <BlackPiece
+              key={i}
+              board={board}
+              movable
+              onHover={setPlaceholderState}
+            />
+          ))}
+        </PieceTray>
       </SafeAreaView>
     </>
   );
 };
+
+const pieceTrayWidthPx = 150;
+
+const PieceTray = ({children}: {children: React.ReactNode}) => {
+  const numPiecesPerRow = Math.floor(pieceTrayWidthPx / pieceSizePx);
+
+  const getXy = (i: number) => {
+    const col = i % numPiecesPerRow;
+    const row = Math.floor(i / numPiecesPerRow);
+    return {
+      x: col * pieceSizePx + pieceSizePx / 2,
+      y: row * pieceSizePx + pieceSizePx / 2,
+    };
+  };
+
+  return (
+    <View style={[styles.pieceTray]}>
+      {React.Children.map(children, (child: React.ReactNode, i) =>
+        React.cloneElement(child as any, {xy: getXy(i)}),
+      )}
+    </View>
+  );
+};
+
+export default App;
 
 const Board = ({
   boardSize,
@@ -116,16 +159,24 @@ const Board = ({
   boardSize: number;
   children: React.ReactNode;
 }) => (
-  <View>
+  <>
     <Image
       source={boardImage}
       style={[styles.board, {height: boardSize, width: boardSize}]}
     />
     {children}
-  </View>
+  </>
 );
 
 const styles = StyleSheet.create({
+  pieceTray: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    height: 500,
+    width: pieceTrayWidthPx,
+  },
   board: {
     resizeMode: 'contain',
   },
@@ -139,4 +190,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default App;
+const range = (n: number) => [...Array(n).keys()];

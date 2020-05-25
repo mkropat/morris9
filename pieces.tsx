@@ -16,7 +16,7 @@ const colorToImage: Map<symbol, any> = new Map([
   [WHITE, require('./pieceWhite.png')],
 ]);
 
-const pieceSizePx = 64;
+export const pieceSizePx = 64;
 const pieceSnapDistancePx = 70;
 
 export const BlackPiece = (props: PieceParams) => (
@@ -30,8 +30,8 @@ interface PieceParams {
   board: BoardQueryer;
   movable?: boolean;
   placeholder?: boolean;
-  position?: string;
   onHover?: ({}: {color: symbol; position: string | null}) => void;
+  xy?: Coordinates;
 }
 
 export const Piece = ({
@@ -40,10 +40,9 @@ export const Piece = ({
   movable = false,
   onHover = () => {},
   placeholder,
-  position,
+  xy,
 }: PieceParams & {color: symbol}) => {
-  const defaultXy = position ? board.xyForPosition(position) : undefined;
-  const pan = useRef(new Animated.ValueXY(defaultXy)).current;
+  const pan = useRef(new Animated.ValueXY(xy)).current;
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: () => true,
@@ -79,13 +78,12 @@ export const Piece = ({
   ).current;
 
   useEffect(() => {
-    if (position) {
-      pan.setValue(boardXyToPieceXy(board.xyForPosition(position)));
+    if (xy) {
+      pan.setValue(boardXyToPieceXy(xy));
     }
-  }, [board, pan, position]);
-
-  const viewStyles: ViewStyle[] = [];
-  if (position) {
+  }, [board, pan, xy]);
+  const viewStyles: ViewStyle[] = [styles.container];
+  if (xy) {
     viewStyles.push(styles.positionedPiece);
   }
   viewStyles.push(pan.getLayout());
@@ -110,10 +108,11 @@ const boardXyToPieceXy = ({x, y}: Coordinates): Coordinates => ({
 });
 
 const styles = StyleSheet.create({
-  piece: {
+  container: {
     height: pieceSizePx,
     width: pieceSizePx,
   },
+  piece: {},
   positionedPiece: {
     position: 'absolute',
   },
