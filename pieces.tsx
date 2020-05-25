@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useRef} from 'react';
 import {
   Animated,
   Image,
@@ -42,7 +42,8 @@ export const Piece = ({
   placeholder,
   xy,
 }: PieceParams & {color: symbol}) => {
-  const pan = useRef(new Animated.ValueXY(xy)).current;
+  const defaultXy = xy && boardXyToPieceXy(xy);
+  const pan = useRef(new Animated.ValueXY(defaultXy)).current;
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: () => true,
@@ -77,11 +78,6 @@ export const Piece = ({
     }),
   ).current;
 
-  useEffect(() => {
-    if (xy) {
-      pan.setValue(boardXyToPieceXy(xy));
-    }
-  }, [board, pan, xy]);
   const viewStyles: ViewStyle[] = [styles.container];
   if (xy) {
     viewStyles.push(styles.positionedPiece);

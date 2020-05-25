@@ -112,16 +112,11 @@ const App = () => {
             />
           )}
         </View>
-        <PieceTray>
-          {range(numPieces).map((i) => (
-            <BlackPiece
-              key={i}
-              board={board}
-              movable
-              onHover={setPlaceholderState}
-            />
-          ))}
-        </PieceTray>
+        <PieceTray
+          board={board}
+          numPieces={numPieces}
+          setPlaceholderState={setPlaceholderState}
+        />
       </SafeAreaView>
     </>
   );
@@ -129,7 +124,15 @@ const App = () => {
 
 const pieceTrayWidthPx = 150;
 
-const PieceTray = ({children}: {children: React.ReactNode}) => {
+const PieceTray = ({
+  board,
+  numPieces,
+  setPlaceholderState,
+}: {
+  board: BoardQueryer;
+  numPieces: number;
+  setPlaceholderState: ({}: {color: symbol; position: string | null}) => void;
+}) => {
   const numPiecesPerRow = Math.floor(pieceTrayWidthPx / pieceSizePx);
 
   const getXy = (i: number) => {
@@ -143,9 +146,15 @@ const PieceTray = ({children}: {children: React.ReactNode}) => {
 
   return (
     <View style={[styles.pieceTray]}>
-      {React.Children.map(children, (child: React.ReactNode, i) =>
-        React.cloneElement(child as any, {xy: getXy(i)}),
-      )}
+      {range(numPieces).map((i) => (
+        <BlackPiece
+          key={i}
+          board={board}
+          movable
+          onHover={setPlaceholderState}
+          xy={getXy(i)}
+        />
+      ))}
     </View>
   );
 };
