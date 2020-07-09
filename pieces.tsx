@@ -1,4 +1,4 @@
-import React, {useRef} from 'react';
+import React, {useEffect, useRef} from 'react';
 import {
   Animated,
   Image,
@@ -77,6 +77,12 @@ export const Piece = ({
       },
     }),
   ).current;
+
+  useEffect(() => {
+    if (placeholder) {
+      pan.setValue(defaultXy);
+    }
+  }, [defaultXy, pan, placeholder]);
 
   const viewStyles: ViewStyle[] = [styles.container];
   if (xy) {
