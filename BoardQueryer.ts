@@ -1,5 +1,6 @@
 import {BLACK, EMPTY, WHITE} from './symbols';
 import {Coordinates} from './types';
+import {addCoordinates, getDistance} from './coordinates';
 
 const boardHorizontalMarginPx = 60;
 const boardVerticalMarginPx = 57;
@@ -94,17 +95,6 @@ class BoardQueryer {
 }
 
 export default BoardQueryer;
-
-const addCoordinates = (l: Coordinates, r: Coordinates): Coordinates => ({
-  x: l.x + r.x,
-  y: l.y + r.y,
-});
-
-const getDistance = (l: Coordinates, r: Coordinates): number => {
-  const a = l.x - r.x;
-  const b = l.y - r.y;
-  return Math.sqrt(a * a + b * b);
-};
 
 const alphabet = 'abcdefghijklmnopqrstuvwxyz';
 

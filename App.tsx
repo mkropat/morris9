@@ -41,6 +41,9 @@ const defaultBoard: Record<string, symbol> = {
   g7: BLACK,
 };
 
+const defaultBlackTray: symbol[] = [BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK];
+const defaultWhiteTray: symbol[] = [WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE];
+
 interface PlaceholderState {
   color: symbol | null;
   position: string | null;
@@ -50,7 +53,8 @@ const App = () => {
   const boardRef = useRef(null);
   const boardPosition = useRef({x: 0, y: 0}).current;
   const [boardState] = useState(defaultBoard);
-  const [numPieces] = useState(9);
+  const [blackTray] = useState(defaultBlackTray);
+  const [whiteTray] = useState(defaultWhiteTray);
   const [
     {color: placeholderColor, position: placeholderPosition},
     setPlaceholderState,
@@ -114,7 +118,8 @@ const App = () => {
         </View>
         <PieceTray
           board={board}
-          numPieces={numPieces}
+          movable
+          pieces={blackTray}
           setPlaceholderState={setPlaceholderState}
         />
       </SafeAreaView>
@@ -126,11 +131,13 @@ const pieceTrayWidthPx = 150;
 
 const PieceTray = ({
   board,
-  numPieces,
+  movable,
+  pieces,
   setPlaceholderState,
 }: {
   board: BoardQueryer;
-  numPieces: number;
+  movable: boolean;
+  pieces: symbol[];
   setPlaceholderState: ({}: {color: symbol; position: string | null}) => void;
 }) => {
   const numPiecesPerRow = Math.floor(pieceTrayWidthPx / pieceSizePx);
@@ -146,14 +153,16 @@ const PieceTray = ({
 
   return (
     <View style={[styles.pieceTray]}>
-      {range(numPieces).map((i) => (
-        <BlackPiece
-          key={i}
-          board={board}
-          movable
-          onHover={setPlaceholderState}
-          xy={getXy(i)}
-        />
+      {pieces.map((piece, i) => (
+        piece !== EMPTY &&
+          <Piece
+            key={i}
+            board={board}
+            color={piece}
+            movable={movable}
+            onHover={setPlaceholderState}
+            xy={getXy(i)}
+          />
       ))}
     </View>
   );

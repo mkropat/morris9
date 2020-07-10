@@ -1,4 +1,5 @@
 import React, {useEffect, useRef} from 'react';
+import {addCoordinates} from './coordinates';
 import {
   Animated,
   Image,
@@ -43,35 +44,45 @@ export const Piece = ({
   xy,
 }: PieceParams & {color: symbol}) => {
   const defaultXy = xy && boardXyToPieceXy(xy);
+  const initialPosition = useRef(defaultXy).current;
   const pan = useRef(new Animated.ValueXY(defaultXy)).current;
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant() {
-        pan.setOffset({
+      onPanResponderGrant({nativeEvent}) {
+        console.log('grant', nativeEvent);
+        pan.setValue({
           x: (pan.x as any)._value,
           y: (pan.y as any)._value,
         });
       },
       onPanResponderMove({nativeEvent}, gestureState) {
         const {dx, dy} = gestureState;
-        pan.setValue({x: dx, y: dy});
+        pan.setOffset({x: dx, y: dy});
 
-        const {pageX, pageY} = nativeEvent;
-        const {distance, position: emptyPosition} = board.nearestEmpty({
-          x: pageX,
-          y: pageY,
+        console.log('move', {
+          gestureState,
+          nativeEvent,
         });
+        const pieceCoordinates = addCoordinates(
+          offsetToCenter(nativeEvent),
+          pageCoordinates(nativeEvent),
+        );
+        const {distance, position: emptyPosition} = board.nearestEmpty(
+          pieceCoordinates,
+        );
         onHover({
           color,
           position: distance < pieceSnapDistancePx ? emptyPosition : null,
         });
       },
-      onPanResponderRelease() {
+      onPanResponderRelease({nativeEvent}) {
+        console.log('release', nativeEvent);
+        pan.flattenOffset();
         onHover({color, position: null});
         Animated.timing(pan, {
           duration: 100,
-          toValue: 0,
+          toValue: initialPosition as any,
           useNativeDriver: false,
         }).start();
       },
@@ -79,7 +90,7 @@ export const Piece = ({
   ).current;
 
   useEffect(() => {
-    if (placeholder) {
+    if (defaultXy && placeholder) {
       pan.setValue(defaultXy);
     }
   }, [defaultXy, pan, placeholder]);
@@ -107,6 +118,28 @@ export const Piece = ({
 const boardXyToPieceXy = ({x, y}: Coordinates): Coordinates => ({
   x: x - pieceSizePx / 2,
   y: y - pieceSizePx / 2,
+});
+
+const offsetToCenter = ({
+  locationX,
+  locationY,
+}: {
+  locationX: number;
+  locationY: number;
+}): Coordinates => ({
+  x: pieceSizePx / 2 - locationX,
+  y: pieceSizePx / 2 - locationY,
+});
+
+const pageCoordinates = ({
+  pageX,
+  pageY,
+}: {
+  pageX: number;
+  pageY: Number;
+}): Coordinates => ({
+  x: pageX.valueOf(),
+  y: pageY.valueOf(),
 });
 
 const styles = StyleSheet.create({
