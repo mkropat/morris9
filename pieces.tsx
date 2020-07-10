@@ -29,56 +29,63 @@ export const WhitePiece = (props: PieceParams) => (
 
 interface PieceParams {
   board: BoardQueryer;
+  id?: string;
   movable?: boolean;
-  placeholder?: boolean;
   onHover?: ({}: {color: symbol; position: string | null}) => void;
+  onMove?: (from: string, to: string) => void;
+  placeholder?: boolean;
   xy?: Coordinates;
 }
 
 export const Piece = ({
   board,
   color,
+  id,
   movable = false,
   onHover = () => {},
+  onMove = () => {},
   placeholder,
   xy,
 }: PieceParams & {color: symbol}) => {
   const defaultXy = xy && boardXyToPieceXy(xy);
-  const initialPosition = useRef(defaultXy).current;
   const pan = useRef(new Animated.ValueXY(defaultXy)).current;
+  const selectedPosition = useRef<string | null>(null);
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant() {
-        pan.setValue({
-          x: (pan.x as any)._value,
-          y: (pan.y as any)._value,
-        });
-      },
       onPanResponderMove({nativeEvent}, gestureState) {
         const {dx, dy} = gestureState;
         pan.setOffset({x: dx, y: dy});
 
-        const pieceCoordinates = addCoordinates(
-          offsetToCenter(nativeEvent),
-          pageCoordinates(nativeEvent),
-        );
-        const {distance, position: emptyPosition} = board.nearestEmpty(
-          pieceCoordinates,
-        );
+        const position = getSelectedPosition({
+          board,
+          pieceCoordinates: addCoordinates(
+            offsetToCenter(nativeEvent),
+            pageCoordinates(nativeEvent),
+          ),
+        });
+        selectedPosition.current = position;
         onHover({
           color,
-          position: distance < pieceSnapDistancePx ? emptyPosition : null,
+          position,
         });
       },
       onPanResponderRelease() {
-        pan.flattenOffset();
         onHover({color, position: null});
-        Animated.timing(pan, {
-          duration: 100,
-          toValue: initialPosition as any,
-          useNativeDriver: false,
-        }).start();
+
+        pan.flattenOffset();
+
+        const from = id;
+        const to = selectedPosition.current;
+        if (from && to) {
+          onMove(from, to);
+        } else {
+          Animated.timing(pan, {
+            duration: 100,
+            toValue: defaultXy as any,
+            useNativeDriver: false,
+          }).start();
+        }
       },
     }),
   ).current;
@@ -113,6 +120,19 @@ const boardXyToPieceXy = ({x, y}: Coordinates): Coordinates => ({
   x: x - pieceSizePx / 2,
   y: y - pieceSizePx / 2,
 });
+
+const getSelectedPosition = ({
+  board,
+  pieceCoordinates,
+}: {
+  board: BoardQueryer;
+  pieceCoordinates: Coordinates;
+}): string | null => {
+  const {distance, position: emptyPosition} = board.nearestEmpty(
+    pieceCoordinates,
+  );
+  return distance < pieceSnapDistancePx ? emptyPosition : null;
+};
 
 const offsetToCenter = ({
   locationX,

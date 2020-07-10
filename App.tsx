@@ -89,6 +89,10 @@ const App = () => {
     boardState,
   });
 
+  const handleMove = (from: string, to: string) => {
+    console.log('move', from, to);
+  };
+
   const updateBoardPosition = (
     x: number,
     y: number,
@@ -116,6 +120,7 @@ const App = () => {
               <BlackPiece
                 key={pos}
                 board={board}
+                id={pos}
                 xy={board.xyForPosition(pos)}
               />
             ))}
@@ -123,6 +128,7 @@ const App = () => {
               <WhitePiece
                 key={pos}
                 board={board}
+                id={pos}
                 xy={board.xyForPosition(pos)}
               />
             ))}
@@ -140,13 +146,17 @@ const App = () => {
           <PieceTray
             board={board}
             movable
+            onMove={handleMove}
             pieces={blackTray}
+            prefix="bt"
             setPlaceholderState={setPlaceholderState}
           />
           <PieceTray
             board={board}
             movable
+            onMove={handleMove}
             pieces={whiteTray}
+            prefix="wt"
             setPlaceholderState={setPlaceholderState}
           />
         </View>
@@ -160,12 +170,16 @@ const pieceTrayWidthPx = 150;
 const PieceTray = ({
   board,
   movable,
+  onMove,
   pieces,
+  prefix,
   setPlaceholderState,
 }: {
   board: BoardQueryer;
   movable: boolean;
+  onMove?: (from: string, to: string) => void;
   pieces: symbol[];
+  prefix: string;
   setPlaceholderState: ({}: {color: symbol; position: string | null}) => void;
 }) => {
   const numPiecesPerRow = Math.floor(pieceTrayWidthPx / pieceSizePx);
@@ -188,8 +202,10 @@ const PieceTray = ({
               key={i}
               board={board}
               color={piece}
+              id={`${prefix}${i}`}
               movable={movable}
               onHover={setPlaceholderState}
+              onMove={onMove}
               xy={getXy(i)}
             />
           ),
