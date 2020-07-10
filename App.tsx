@@ -1,4 +1,6 @@
+import BoardQueryer from './BoardQueryer';
 import React, {useRef, useState} from 'react';
+import {useProduceState} from './produce';
 import {
   Dimensions,
   Image,
@@ -10,7 +12,6 @@ import {
 } from 'react-native';
 import {BLACK, EMPTY, WHITE} from './symbols';
 import {BlackPiece, Piece, pieceSizePx, WhitePiece} from './pieces';
-import BoardQueryer from './BoardQueryer';
 
 const boardImage = require('./board.png');
 
@@ -72,13 +73,15 @@ interface PlaceholderState {
 const App = () => {
   const boardRef = useRef(null);
   const boardPosition = useRef({x: 0, y: 0}).current;
-  const [boardState] = useState(defaultBoard);
-  const [blackTray] = useState(defaultBlackTray);
-  const [whiteTray] = useState(defaultWhiteTray);
+  const [boardState, updateBoardState] = useProduceState(defaultBoard);
+  const [blackTray, updateBlackTray] = useProduceState(defaultBlackTray);
+  const [whiteTray, updateWhiteTray] = useProduceState(defaultWhiteTray);
   const [
     {color: placeholderColor, position: placeholderPosition},
     setPlaceholderState,
   ] = useState<PlaceholderState>({color: null, position: null});
+
+  console.log('App', JSON.stringify(boardState, null, 2));
 
   const {height: windowHeight, width: windowWidth} = Dimensions.get('window');
   const boardSize = Math.min(windowHeight, windowWidth);
@@ -89,8 +92,53 @@ const App = () => {
     boardState,
   });
 
+  const getPositionColor = (position: string): symbol => {
+    const i = parseInt(position.replace(/\D/g, ''), 10);
+
+    if (position.startsWith('bt')) {
+      return blackTray[i];
+    }
+    if (position.startsWith('wt')) {
+      return whiteTray[i];
+    }
+    return boardState[position];
+  };
+
+  const setPosition = ({
+    color,
+    position,
+  }: {
+    color: symbol;
+    position: string;
+  }) => {
+    const i = parseInt(position.replace(/\D/g, ''), 10);
+
+    if (position.startsWith('bt')) {
+      updateBlackTray((draftTray) => {
+        draftTray[i] = color;
+      });
+    } else if (position.startsWith('wt')) {
+      updateWhiteTray((draftTray) => {
+        draftTray[i] = color;
+      });
+    } else {
+      updateBoardState((draftState) => {
+        draftState[position] = color;
+      });
+    }
+  };
+
   const handleMove = (from: string, to: string) => {
     console.log('move', from, to);
+    setPosition({
+      color: getPositionColor(from),
+      position: to,
+    });
+    setPosition({
+      color: EMPTY,
+      position: from,
+    });
+    console.log('move done');
   };
 
   const updateBoardPosition = (

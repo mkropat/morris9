@@ -10,6 +10,7 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
   "dependencies": {
+    "immer": "^7.0.5",
     "react": "16.11.0",
     "react-devtools": "^4.7.0",
     "react-native": "0.62.2"
