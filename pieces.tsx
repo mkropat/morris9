@@ -49,8 +49,7 @@ export const Piece = ({
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant({nativeEvent}) {
-        console.log('grant', nativeEvent);
+      onPanResponderGrant() {
         pan.setValue({
           x: (pan.x as any)._value,
           y: (pan.y as any)._value,
@@ -60,10 +59,6 @@ export const Piece = ({
         const {dx, dy} = gestureState;
         pan.setOffset({x: dx, y: dy});
 
-        console.log('move', {
-          gestureState,
-          nativeEvent,
-        });
         const pieceCoordinates = addCoordinates(
           offsetToCenter(nativeEvent),
           pageCoordinates(nativeEvent),
@@ -76,8 +71,7 @@ export const Piece = ({
           position: distance < pieceSnapDistancePx ? emptyPosition : null,
         });
       },
-      onPanResponderRelease({nativeEvent}) {
-        console.log('release', nativeEvent);
+      onPanResponderRelease() {
         pan.flattenOffset();
         onHover({color, position: null});
         Animated.timing(pan, {

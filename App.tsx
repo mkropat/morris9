@@ -41,8 +41,28 @@ const defaultBoard: Record<string, symbol> = {
   g7: BLACK,
 };
 
-const defaultBlackTray: symbol[] = [BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK];
-const defaultWhiteTray: symbol[] = [WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE];
+const defaultBlackTray: symbol[] = [
+  BLACK,
+  BLACK,
+  BLACK,
+  BLACK,
+  BLACK,
+  BLACK,
+  BLACK,
+  BLACK,
+  BLACK,
+];
+const defaultWhiteTray: symbol[] = [
+  WHITE,
+  WHITE,
+  WHITE,
+  WHITE,
+  WHITE,
+  WHITE,
+  WHITE,
+  WHITE,
+  WHITE,
+];
 
 interface PlaceholderState {
   color: symbol | null;
@@ -116,12 +136,20 @@ const App = () => {
             />
           )}
         </View>
-        <PieceTray
-          board={board}
-          movable
-          pieces={blackTray}
-          setPlaceholderState={setPlaceholderState}
-        />
+        <View style={styles.trayContainer}>
+          <PieceTray
+            board={board}
+            movable
+            pieces={blackTray}
+            setPlaceholderState={setPlaceholderState}
+          />
+          <PieceTray
+            board={board}
+            movable
+            pieces={whiteTray}
+            setPlaceholderState={setPlaceholderState}
+          />
+        </View>
       </SafeAreaView>
     </>
   );
@@ -153,17 +181,19 @@ const PieceTray = ({
 
   return (
     <View style={[styles.pieceTray]}>
-      {pieces.map((piece, i) => (
-        piece !== EMPTY &&
-          <Piece
-            key={i}
-            board={board}
-            color={piece}
-            movable={movable}
-            onHover={setPlaceholderState}
-            xy={getXy(i)}
-          />
-      ))}
+      {pieces.map(
+        (piece, i) =>
+          piece !== EMPTY && (
+            <Piece
+              key={i}
+              board={board}
+              color={piece}
+              movable={movable}
+              onHover={setPlaceholderState}
+              xy={getXy(i)}
+            />
+          ),
+      )}
     </View>
   );
 };
@@ -201,11 +231,13 @@ const styles = StyleSheet.create({
   placeholderPiece: {
     opacity: 0.5,
   },
+  trayContainer: {
+    flex: 1,
+    flexDirection: 'row',
+  },
   title: {
     fontSize: 16,
     paddingVertical: 5,
     paddingHorizontal: 10,
   },
 });
-
-const range = (n: number) => [...Array(n).keys()];
