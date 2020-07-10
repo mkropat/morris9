@@ -15,55 +15,42 @@ import {BlackPiece, Piece, pieceSizePx, WhitePiece} from './pieces';
 
 const boardImage = require('./board.png');
 
-const defaultBoard: Record<string, symbol> = {
-  a1: EMPTY,
-  d1: EMPTY,
-  g1: EMPTY,
-  b2: EMPTY,
-  d2: EMPTY,
-  f2: EMPTY,
-  c3: EMPTY,
-  d3: EMPTY,
-  e3: EMPTY,
-  a4: EMPTY,
-  b4: EMPTY,
-  c4: EMPTY,
-  e4: EMPTY,
-  f4: EMPTY,
-  g4: EMPTY,
-  c5: EMPTY,
-  d5: EMPTY,
-  e5: EMPTY,
-  b6: EMPTY,
-  d6: EMPTY,
-  f6: EMPTY,
-  a7: EMPTY,
-  d7: EMPTY,
-  g7: EMPTY,
-};
+interface GameState {
+  board: Record<string, symbol>;
+  blackTray: symbol[];
+  whiteTray: symbol[];
+}
 
-const defaultBlackTray: symbol[] = [
-  BLACK,
-  BLACK,
-  BLACK,
-  BLACK,
-  BLACK,
-  BLACK,
-  BLACK,
-  BLACK,
-  BLACK,
-];
-const defaultWhiteTray: symbol[] = [
-  WHITE,
-  WHITE,
-  WHITE,
-  WHITE,
-  WHITE,
-  WHITE,
-  WHITE,
-  WHITE,
-  WHITE,
-];
+const defaultGameState: GameState = {
+  board: {
+    a1: EMPTY,
+    d1: EMPTY,
+    g1: EMPTY,
+    b2: EMPTY,
+    d2: EMPTY,
+    f2: EMPTY,
+    c3: EMPTY,
+    d3: EMPTY,
+    e3: EMPTY,
+    a4: EMPTY,
+    b4: EMPTY,
+    c4: EMPTY,
+    e4: EMPTY,
+    f4: EMPTY,
+    g4: EMPTY,
+    c5: EMPTY,
+    d5: EMPTY,
+    e5: EMPTY,
+    b6: EMPTY,
+    d6: EMPTY,
+    f6: EMPTY,
+    a7: EMPTY,
+    d7: EMPTY,
+    g7: EMPTY,
+  },
+  blackTray: [BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK],
+  whiteTray: [WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE],
+};
 
 interface PlaceholderState {
   color: symbol | null;
@@ -73,9 +60,9 @@ interface PlaceholderState {
 const App = () => {
   const boardRef = useRef(null);
   const boardPosition = useRef({x: 0, y: 0}).current;
-  const [boardState, updateBoardState] = useImmer(defaultBoard);
-  const [blackTray, updateBlackTray] = useImmer(defaultBlackTray);
-  const [whiteTray, updateWhiteTray] = useImmer(defaultWhiteTray);
+  const [{board: boardState, blackTray, whiteTray}, updateGameState] = useImmer(
+    defaultGameState,
+  );
   const [
     {color: placeholderColor, position: placeholderPosition},
     setPlaceholderState,
@@ -90,50 +77,18 @@ const App = () => {
     boardState,
   });
 
-  const getPositionColor = (position: string): symbol => {
-    const i = parseInt(position.replace(/\D/g, ''), 10);
-
-    if (position.startsWith('bt')) {
-      return blackTray[i];
-    }
-    if (position.startsWith('wt')) {
-      return whiteTray[i];
-    }
-    return boardState[position];
-  };
-
-  const setPosition = ({
-    color,
-    position,
-  }: {
-    color: symbol;
-    position: string;
-  }) => {
-    const i = parseInt(position.replace(/\D/g, ''), 10);
-
-    if (position.startsWith('bt')) {
-      updateBlackTray((draftTray) => {
-        draftTray[i] = color;
-      });
-    } else if (position.startsWith('wt')) {
-      updateWhiteTray((draftTray) => {
-        draftTray[i] = color;
-      });
-    } else {
-      updateBoardState((draftState) => {
-        draftState[position] = color;
-      });
-    }
-  };
-
   const handleMove = (from: string, to: string) => {
-    setPosition({
-      color: getPositionColor(from),
-      position: to,
-    });
-    setPosition({
-      color: EMPTY,
-      position: from,
+    updateGameState((draftState) => {
+      setPosition({
+        state: draftState,
+        color: getPositionColor(draftState, from),
+        position: to,
+      });
+      setPosition({
+        state: draftState,
+        color: EMPTY,
+        position: from,
+      });
     });
   };
 
@@ -197,7 +152,6 @@ const App = () => {
           />
           <PieceTray
             board={board}
-            movable
             onMove={handleMove}
             pieces={whiteTray}
             prefix="wt"
@@ -213,14 +167,14 @@ const pieceTrayWidthPx = 150;
 
 const PieceTray = ({
   board,
-  movable,
+  movable = false,
   onMove,
   pieces,
   prefix,
   setPlaceholderState,
 }: {
   board: BoardQueryer;
-  movable: boolean;
+  movable?: boolean;
   onMove?: (from: string, to: string) => void;
   pieces: symbol[];
   prefix: string;
@@ -275,6 +229,39 @@ const Board = ({
     {children}
   </>
 );
+
+const getPositionColor = (state: GameState, position: string): symbol => {
+  const i = parseInt(position.replace(/\D/g, ''), 10);
+  const {blackTray, board, whiteTray} = state;
+
+  if (position.startsWith('bt')) {
+    return blackTray[i];
+  }
+  if (position.startsWith('wt')) {
+    return whiteTray[i];
+  }
+  return board[position];
+};
+
+const setPosition = ({
+  color,
+  state,
+  position,
+}: {
+  color: symbol;
+  state: GameState;
+  position: string;
+}) => {
+  const i = parseInt(position.replace(/\D/g, ''), 10);
+
+  if (position.startsWith('bt')) {
+    state.blackTray[i] = color;
+  } else if (position.startsWith('wt')) {
+    state.whiteTray[i] = color;
+  } else {
+    state.board[position] = color;
+  }
+};
 
 const styles = StyleSheet.create({
   pieceTray: {
