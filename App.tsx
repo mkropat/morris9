@@ -1,6 +1,6 @@
 import BoardQueryer from './BoardQueryer';
+import {useImmer} from 'use-immer';
 import React, {useRef, useState} from 'react';
-import {useProduceState} from './produce';
 import {
   Dimensions,
   Image,
@@ -73,15 +73,13 @@ interface PlaceholderState {
 const App = () => {
   const boardRef = useRef(null);
   const boardPosition = useRef({x: 0, y: 0}).current;
-  const [boardState, updateBoardState] = useProduceState(defaultBoard);
-  const [blackTray, updateBlackTray] = useProduceState(defaultBlackTray);
-  const [whiteTray, updateWhiteTray] = useProduceState(defaultWhiteTray);
+  const [boardState, updateBoardState] = useImmer(defaultBoard);
+  const [blackTray, updateBlackTray] = useImmer(defaultBlackTray);
+  const [whiteTray, updateWhiteTray] = useImmer(defaultWhiteTray);
   const [
     {color: placeholderColor, position: placeholderPosition},
     setPlaceholderState,
   ] = useState<PlaceholderState>({color: null, position: null});
-
-  console.log('App', JSON.stringify(boardState, null, 2));
 
   const {height: windowHeight, width: windowWidth} = Dimensions.get('window');
   const boardSize = Math.min(windowHeight, windowWidth);
@@ -129,7 +127,6 @@ const App = () => {
   };
 
   const handleMove = (from: string, to: string) => {
-    console.log('move', from, to);
     setPosition({
       color: getPositionColor(from),
       position: to,
@@ -138,7 +135,6 @@ const App = () => {
       color: EMPTY,
       position: from,
     });
-    console.log('move done');
   };
 
   const updateBoardPosition = (
