@@ -47,6 +47,9 @@ export const Piece = ({
   placeholder,
   xy,
 }: PieceParams & {color: symbol}) => {
+  const currentBoard = useRef(board);
+  currentBoard.current = board;
+
   const defaultXy = xy && boardXyToPieceXy(xy);
   const pan = useRef(new Animated.ValueXY(defaultXy)).current;
   const selectedPosition = useRef<string | null>(null);
@@ -58,7 +61,7 @@ export const Piece = ({
         pan.setOffset({x: dx, y: dy});
 
         const position = getSelectedPosition({
-          board,
+          board: currentBoard.current,
           pieceCoordinates: addCoordinates(
             offsetToCenter(nativeEvent),
             pageCoordinates(nativeEvent),
