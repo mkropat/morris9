@@ -11,8 +11,15 @@ import {
   Text,
   View,
 } from 'react-native';
-import {BLACK, EMPTY, WHITE} from './symbols';
-import {BlackPiece, Piece, pieceSizePx, WhitePiece} from './pieces';
+import {BLACK, CANCEL, EMPTY, WHITE} from './symbols';
+import {
+  BlackPiece,
+  Piece,
+  pieceSizePx,
+  WhitePiece,
+  HoverCallback,
+  ReleaseCallback,
+} from './pieces';
 
 const boardImage = require('./board.png');
 
@@ -78,19 +85,52 @@ const App = () => {
     boardState,
   });
 
-  const handleMove = (from: string, to: string) => {
-    updateGameState((draftState) => {
-      setPosition({
-        state: draftState,
-        color: getPositionColor(draftState, from),
-        position: to,
-      });
-      setPosition({
-        state: draftState,
-        color: EMPTY,
-        position: from,
-      });
+  const hoverPositionRef = useRef<string | null>(null);
+
+  const handlePieceHover = ({
+    color,
+    coordinates,
+  }: {
+    color: symbol;
+    coordinates: Coordinates;
+  }) => {
+    const hoverPosition = getSelectedPosition({
+      board,
+      coordinates,
     });
+    setPlaceholderState({
+      color,
+      position: hoverPosition,
+    });
+    hoverPositionRef.current = hoverPosition;
+  };
+
+  const handlePieceRelease = ({
+    color,
+    position,
+  }: {
+    color: symbol;
+    position: string;
+  }) => {
+    setPlaceholderState({color, position: null});
+
+    const from = position;
+    const to = hoverPositionRef.current;
+    if (from && to) {
+      updateGameState((draftState) => {
+        setPosition({
+          state: draftState,
+          color: getPositionColor(draftState, from),
+          position: to,
+        });
+        setPosition({
+          state: draftState,
+          color: EMPTY,
+          position: from,
+        });
+      });
+      return CANCEL;
+    }
   };
 
   const updateBoardPosition = (
@@ -119,44 +159,45 @@ const App = () => {
             {board.blackPositions.map((pos) => (
               <BlackPiece
                 key={pos}
-                board={board}
-                id={pos}
+                onHover={handlePieceHover}
+                onRelease={handlePieceRelease}
+                movable
+                position={pos}
                 xy={board.xyForPosition(pos)}
               />
             ))}
             {board.whitePositions.map((pos) => (
               <WhitePiece
                 key={pos}
-                board={board}
-                id={pos}
+                onHover={handlePieceHover}
+                onRelease={handlePieceRelease}
+                position={pos}
                 xy={board.xyForPosition(pos)}
               />
             ))}
           </Board>
           {placeholderColor && placeholderPosition && (
             <Piece
-              board={board}
               color={placeholderColor}
               placeholder
+              position={'placeholder'}
               xy={board.xyForPosition(placeholderPosition)}
             />
           )}
         </View>
         <View style={styles.trayContainer}>
           <PieceTray
-            board={board}
             movable
-            onMove={handleMove}
+            onPieceHover={handlePieceHover}
+            onPieceRelease={handlePieceRelease}
             pieces={blackTray}
             prefix="bt"
-            setPlaceholderState={setPlaceholderState}
           />
           <PieceTray
-            board={board}
-            onMove={handleMove}
+            onPieceHover={handlePieceHover}
+            onPieceRelease={handlePieceRelease}
             pieces={whiteTray}
             prefix="wt"
-            setPlaceholderState={setPlaceholderState}
           />
         </View>
       </SafeAreaView>
@@ -177,19 +218,17 @@ const getXy = (i: number): Coordinates => {
 };
 
 const PieceTray = ({
-  board,
   movable = false,
-  onMove,
+  onPieceHover,
+  onPieceRelease,
   pieces,
   prefix,
-  setPlaceholderState,
 }: {
-  board: BoardQueryer;
   movable?: boolean;
-  onMove?: (from: string, to: string) => void;
+  onPieceHover: HoverCallback;
+  onPieceRelease: ReleaseCallback;
   pieces: symbol[];
   prefix: string;
-  setPlaceholderState: ({}: {color: symbol; position: string | null}) => void;
 }) => {
   return (
     <View style={[styles.pieceTray]}>
@@ -198,12 +237,11 @@ const PieceTray = ({
           piece !== EMPTY && (
             <Piece
               key={i}
-              board={board}
               color={piece}
-              id={`${prefix}${i}`}
+              position={`${prefix}${i}`}
               movable={movable}
-              onHover={setPlaceholderState}
-              onMove={onMove}
+              onHover={onPieceHover}
+              onRelease={onPieceRelease}
               xy={getXy(i)}
             />
           ),
@@ -229,6 +267,19 @@ const Board = ({
     {children}
   </>
 );
+
+const pieceSnapDistancePx = 70;
+
+const getSelectedPosition = ({
+  board,
+  coordinates,
+}: {
+  board: BoardQueryer;
+  coordinates: Coordinates;
+}): string | null => {
+  const {distance, position: emptyPosition} = board.nearestEmpty(coordinates);
+  return distance < pieceSnapDistancePx ? emptyPosition : null;
+};
 
 const getPositionColor = (state: GameState, position: string): symbol => {
   const i = parseInt(position.replace(/\D/g, ''), 10);

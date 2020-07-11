@@ -9,8 +9,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import {Coordinates} from './types';
-import BoardQueryer from './BoardQueryer';
-import {BLACK, WHITE} from './symbols';
+import {BLACK, CANCEL, WHITE} from './symbols';
 
 const colorToImage: Map<symbol, any> = new Map([
   [BLACK, require('./pieceBlack.png')],
@@ -18,7 +17,6 @@ const colorToImage: Map<symbol, any> = new Map([
 ]);
 
 export const pieceSizePx = 64;
-const pieceSnapDistancePx = 70;
 
 export const BlackPiece = (props: PieceParams) => (
   <Piece color={BLACK} {...props} />
@@ -28,31 +26,49 @@ export const WhitePiece = (props: PieceParams) => (
 );
 
 interface PieceParams {
-  board: BoardQueryer;
-  id?: string;
+  position: string;
   movable?: boolean;
-  onHover?: ({}: {color: symbol; position: string | null}) => void;
-  onMove?: (from: string, to: string) => void;
+  onHover?: HoverCallback;
+  onRelease?: ReleaseCallback;
   placeholder?: boolean;
-  xy?: Coordinates;
+  xy: Coordinates;
 }
 
+export type HoverCallback = ({}: {
+  color: symbol;
+  coordinates: Coordinates;
+  position: string;
+}) => void;
+
+export type ReleaseCallback = ({}: {
+  color: symbol;
+  position: string;
+}) => symbol | void;
+
 export const Piece = ({
-  board,
   color,
-  id,
+  position,
   movable = false,
   onHover = () => {},
-  onMove = () => {},
+  onRelease = () => {},
   placeholder,
   xy,
 }: PieceParams & {color: symbol}) => {
-  const currentBoard = useRef(board);
-  currentBoard.current = board;
+  const onHoverRef = useRef(onHover);
+  onHoverRef.current = onHover;
 
-  const defaultXy = xy && boardXyToPieceXy(xy);
+  const onReleaseRef = useRef(onRelease);
+  onReleaseRef.current = onRelease;
+
+  const colorRef = useRef(color);
+  colorRef.current = color;
+
+  const positionRef = useRef(position);
+  positionRef.current = position;
+
+  const defaultXy = xyToPieceCenterXy(xy);
   const pan = useRef(new Animated.ValueXY(defaultXy)).current;
-  const selectedPosition = useRef<string | null>(null);
+
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: () => true,
@@ -60,29 +76,25 @@ export const Piece = ({
         const {dx, dy} = gestureState;
         pan.setOffset({x: dx, y: dy});
 
-        const position = getSelectedPosition({
-          board: currentBoard.current,
-          pieceCoordinates: addCoordinates(
-            offsetToCenter(nativeEvent),
-            pageCoordinates(nativeEvent),
-          ),
-        });
-        selectedPosition.current = position;
-        onHover({
-          color,
-          position,
+        const hoverXy = addCoordinates(
+          offsetToCenter(nativeEvent),
+          pageCoordinates(nativeEvent),
+        );
+        onHoverRef.current({
+          color: colorRef.current,
+          coordinates: hoverXy,
+          position: positionRef.current,
         });
       },
       onPanResponderRelease() {
-        onHover({color, position: null});
-
         pan.flattenOffset();
 
-        const from = id;
-        const to = selectedPosition.current;
-        if (from && to) {
-          onMove(from, to);
-        } else {
+        const behavior = onReleaseRef.current({
+          color: colorRef.current,
+          position: positionRef.current,
+        });
+
+        if (behavior !== CANCEL) {
           Animated.timing(pan, {
             duration: 100,
             toValue: defaultXy as any,
@@ -100,9 +112,7 @@ export const Piece = ({
   }, [defaultXy, pan, placeholder]);
 
   const viewStyles: ViewStyle[] = [styles.container];
-  if (xy) {
-    viewStyles.push(styles.positionedPiece);
-  }
+  viewStyles.push(styles.positionedPiece);
   viewStyles.push(pan.getLayout());
 
   const imageStyles: ImageStyle[] = [styles.piece];
@@ -119,23 +129,10 @@ export const Piece = ({
   );
 };
 
-const boardXyToPieceXy = ({x, y}: Coordinates): Coordinates => ({
+const xyToPieceCenterXy = ({x, y}: Coordinates): Coordinates => ({
   x: x - pieceSizePx / 2,
   y: y - pieceSizePx / 2,
 });
-
-const getSelectedPosition = ({
-  board,
-  pieceCoordinates,
-}: {
-  board: BoardQueryer;
-  pieceCoordinates: Coordinates;
-}): string | null => {
-  const {distance, position: emptyPosition} = board.nearestEmpty(
-    pieceCoordinates,
-  );
-  return distance < pieceSnapDistancePx ? emptyPosition : null;
-};
 
 const offsetToCenter = ({
   locationX,
