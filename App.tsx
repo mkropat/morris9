@@ -1,6 +1,7 @@
 import BoardQueryer from './BoardQueryer';
-import {useImmer} from 'use-immer';
 import React, {useRef, useState} from 'react';
+import {Coordinates} from './types';
+import {useImmer} from 'use-immer';
 import {
   Dimensions,
   Image,
@@ -164,6 +165,16 @@ const App = () => {
 };
 
 const pieceTrayWidthPx = 150;
+const numPiecesPerRow = Math.floor(pieceTrayWidthPx / pieceSizePx);
+
+const getXy = (i: number): Coordinates => {
+  const col = i % numPiecesPerRow;
+  const row = Math.floor(i / numPiecesPerRow);
+  return {
+    x: col * pieceSizePx + pieceSizePx / 2,
+    y: row * pieceSizePx + pieceSizePx / 2,
+  };
+};
 
 const PieceTray = ({
   board,
@@ -180,17 +191,6 @@ const PieceTray = ({
   prefix: string;
   setPlaceholderState: ({}: {color: symbol; position: string | null}) => void;
 }) => {
-  const numPiecesPerRow = Math.floor(pieceTrayWidthPx / pieceSizePx);
-
-  const getXy = (i: number) => {
-    const col = i % numPiecesPerRow;
-    const row = Math.floor(i / numPiecesPerRow);
-    return {
-      x: col * pieceSizePx + pieceSizePx / 2,
-      y: row * pieceSizePx + pieceSizePx / 2,
-    };
-  };
-
   return (
     <View style={[styles.pieceTray]}>
       {pieces.map(
