@@ -1,4 +1,4 @@
-import {BLACK, EMPTY, WHITE} from './symbols';
+import {PieceColor} from './symbols';
 
 export interface Coordinates {
   x: number;
@@ -11,4 +11,4 @@ export interface GameState {
   whiteTray: PieceColor[];
 }
 
-export type PieceColor = typeof BLACK | typeof EMPTY | typeof WHITE;
+export {PieceColor};
