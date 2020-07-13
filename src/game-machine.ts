@@ -1,11 +1,11 @@
 import produce from 'immer';
 import {BLACK, EMPTY, WHITE} from './symbols';
-import {GameState, PieceColor} from './types';
+import {GameContext, PieceColor} from './types';
 import {Machine, assign} from 'xstate';
 
 const alphabet = 'abcdefghijklmnopqrstuvwxyz';
 
-const defaultGameState: GameState = {
+const defaultGameContext: GameContext = {
   board: {
     a1: EMPTY,
     d1: EMPTY,
@@ -38,12 +38,12 @@ const defaultGameState: GameState = {
 
 export const areThreeInARow = ({
   color,
-  state,
+  context,
 }: {
   color: PieceColor;
-  state: GameState;
+  context: GameContext;
 }): boolean => {
-  const positions = boardPositionsByValue(state, color);
+  const positions = boardPositionsByValue(context, color);
 
   const byCols: Record<number, string[]> = {};
   const byRows: Record<number, string[]> = {};
@@ -109,32 +109,32 @@ interface PlaceAction {
   to: string;
 }
 
-const getColor = (state: GameState, position: string): PieceColor => {
+const getColor = (context: GameContext, position: string): PieceColor => {
   const {color: trayColor, index} = parsePosition(position) as TrayPosition;
   if (trayColor) {
     switch (trayColor) {
       case BLACK:
-        return state.blackTray[index];
+        return context.blackTray[index];
       case WHITE:
-        return state.whiteTray[index];
+        return context.whiteTray[index];
       default:
         throw new Error(`unrecognized color: ${trayColor.toString()}`);
     }
   }
 
-  return state.board[position];
+  return context.board[position];
 };
 
 const setPosition = ({
   color,
-  state,
+  context,
   position,
 }: {
   color: PieceColor;
-  state: GameState;
+  context: GameContext;
   position: string;
 }) =>
-  produce(state, (draftState) => {
+  produce(context, (draftState) => {
     const {color: trayColor, index} = parsePosition(position) as TrayPosition;
 
     if (trayColor) {
@@ -153,35 +153,39 @@ const setPosition = ({
     }
   });
 
-const placePiece = (state: GameState, action: PlaceAction) => {
+const placePiece = (context: GameContext, action: PlaceAction) => {
   const {from, to} = action;
   const added = setPosition({
-    state,
-    color: getColor(state, from),
+    context,
+    color: getColor(context, from),
     position: to,
   });
   return setPosition({
-    state: added,
+    context: added,
     color: EMPTY,
     position: from,
   });
 };
 
-const arePlaceablePiecesInTrays = (state: GameState) => {
-  return state.blackTray.includes(BLACK) || state.whiteTray.includes(WHITE);
+const arePlaceablePiecesInTrays = (context: GameContext) => {
+  return context.blackTray.includes(BLACK) || context.whiteTray.includes(WHITE);
 };
 
 export const boardPositionsByValue = (
-  state: GameState,
+  context: GameContext,
   color: PieceColor,
 ): string[] =>
-  Object.entries(state.board)
+  Object.entries(context.board)
     .filter(([, positionValue]) => positionValue === color)
     .map(([position]) => position);
 
-const initializeGame = (): GameState => defaultGameState;
+const initializeGame = (): GameContext => defaultGameContext;
 
-export const gameMachine = Machine<GameState, any, any>({
+const enumerateMoves = (context: GameContext): [string, string][] => {
+  return [];
+};
+
+export const gameMachine = Machine<GameContext, any, any>({
   id: 'morris9',
   initial: 'start',
   context: {
@@ -210,11 +214,12 @@ export const gameMachine = Machine<GameState, any, any>({
       always: [
         {
           target: 'phase1BlackCapturePiece',
-          cond: (state: GameState) => areThreeInARow({state, color: BLACK}),
+          cond: (context: GameContext) =>
+            areThreeInARow({context, color: BLACK}),
         },
         {
           target: 'phase2WhiteTurn',
-          cond: (state: GameState) => !arePlaceablePiecesInTrays(state),
+          cond: (context: GameContext) => !arePlaceablePiecesInTrays(context),
         },
         'phase1WhiteTurn',
       ],
@@ -234,11 +239,12 @@ export const gameMachine = Machine<GameState, any, any>({
       always: [
         {
           target: 'phase1WhiteCapturePiece',
-          cond: (state: GameState) => areThreeInARow({state, color: WHITE}),
+          cond: (context: GameContext) =>
+            areThreeInARow({context, color: WHITE}),
         },
         {
           target: 'phase2BlackTurn',
-          cond: (state: GameState) => !arePlaceablePiecesInTrays(state),
+          cond: (context: GameContext) => !arePlaceablePiecesInTrays(context),
         },
         'phase1BlackTurn',
       ],

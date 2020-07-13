@@ -53,7 +53,7 @@ const App = () => {
 
   const {canMoveBlackTray = false, canMoveWhiteTray = false} = flatten1Level(
     machineState.meta,
-  );
+  ) as any;
 
   const {height: windowHeight, width: windowWidth} = Dimensions.get('window');
   const boardSize = Math.min(windowHeight, windowWidth);
@@ -279,4 +279,5 @@ const styles = StyleSheet.create({
   },
 });
 
-const flatten1Level = (obj) => Object.assign({}, ...Object.values(obj));
+const flatten1Level = (obj: object): object =>
+  Object.assign({}, ...Object.values(obj));

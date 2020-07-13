@@ -5,7 +5,7 @@ export interface Coordinates {
   y: number;
 }
 
-export interface GameState {
+export interface GameContext {
   board: Record<string, PieceColor>;
   blackTray: PieceColor[];
   whiteTray: PieceColor[];
