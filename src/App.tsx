@@ -21,7 +21,7 @@ import {
   ReleaseCallback,
 } from './pieces';
 
-const boardImage = require('./board.png');
+const boardImage = require('../assets/board.png');
 
 interface GameState {
   board: Record<string, PieceColor>;

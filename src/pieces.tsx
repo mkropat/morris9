@@ -12,8 +12,8 @@ import {Coordinates, PieceColor} from './types';
 import {BLACK, CANCEL, WHITE} from './symbols';
 
 const colorToImage: Map<symbol, any> = new Map([
-  [BLACK, require('./pieceBlack.png')],
-  [WHITE, require('./pieceWhite.png')],
+  [BLACK, require('../assets/pieceBlack.png')],
+  [WHITE, require('../assets/pieceWhite.png')],
 ]);
 
 export const pieceSizePx = 64;
