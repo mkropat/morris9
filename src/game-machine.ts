@@ -153,7 +153,7 @@ const setPosition = ({
     }
   });
 
-const placePiece = (context: GameContext, action: PlaceAction) => {
+const placePiece = (context: GameContext, action: PlaceAction): GameContext => {
   const {from, to} = action;
   const added = setPosition({
     context,
@@ -185,78 +185,106 @@ const enumerateMoves = (context: GameContext): [string, string][] => {
   return [];
 };
 
-export const gameMachine = Machine<GameContext, any, any>({
-  id: 'morris9',
-  initial: 'start',
-  context: {
-    board: {},
-    blackTray: [],
-    whiteTray: [],
+export const gameMachine = Machine<GameContext, any, any>(
+  {
+    id: 'morris9',
+    initial: 'start',
+    context: {
+      board: {},
+      blackTray: [],
+      whiteTray: [],
+    },
+    states: {
+      start: {
+        on: {
+          NEW_GAME: {
+            target: 'phase1BlackTurn',
+            actions: 'initializeGame',
+          },
+        },
+      },
+      phase1BlackTurn: {
+        on: {
+          PLACE: {target: 'phase1BlackTurnPlaced', actions: 'placePiece'},
+        },
+        meta: {
+          canMoveBlackTray: true,
+          currentPlayer: BLACK,
+        },
+      },
+      phase1BlackTurnPlaced: {
+        always: [
+          {
+            target: 'phase1BlackCapturePiece',
+            cond: 'currentPlayerHasThreeInARow',
+          },
+          {
+            target: 'phase2WhiteTurn',
+            cond: 'noAvailableTrayMoves',
+          },
+          'phase1WhiteTurn',
+        ],
+        meta: {
+          currentPlayer: BLACK,
+        },
+      },
+      phase1BlackCapturePiece: {
+        type: 'final',
+      },
+      phase1WhiteTurn: {
+        on: {
+          PLACE: {target: 'phase1WhiteTurnPlaced', actions: 'placePiece'},
+        },
+        meta: {
+          canMoveWhiteTray: true,
+          currentPlayer: WHITE,
+        },
+      },
+      phase1WhiteTurnPlaced: {
+        always: [
+          {
+            target: 'phase1WhiteCapturePiece',
+            cond: 'currentPlayerHasThreeInARow',
+          },
+          {
+            target: 'phase2BlackTurn',
+            cond: 'noAvailableTrayMoves',
+          },
+          'phase1BlackTurn',
+        ],
+        meta: {
+          currentPlayer: WHITE,
+        },
+      },
+      phase1WhiteCapturePiece: {
+        type: 'final',
+      },
+      phase2BlackTurn: {
+        type: 'final',
+      },
+      phase2WhiteTurn: {
+        type: 'final',
+      },
+    },
   },
-  states: {
-    start: {
-      on: {
-        NEW_GAME: {
-          target: 'phase1BlackTurn',
-          actions: [assign(initializeGame)],
-        },
-      },
+  {
+    actions: {
+      placePiece: assign((context: GameContext, action: PlaceAction) =>
+        placePiece(context, action),
+      ),
+      initializeGame: assign(() => initializeGame()),
     },
-    phase1BlackTurn: {
-      on: {
-        PLACE: {target: 'phase1BlackTurnPlaced', actions: [assign(placePiece)]},
-      },
-      meta: {
-        canMoveBlackTray: true,
-      },
-    },
-    phase1BlackTurnPlaced: {
-      always: [
-        {
-          target: 'phase1BlackCapturePiece',
-          cond: (context: GameContext) =>
-            areThreeInARow({context, color: BLACK}),
-        },
-        {
-          target: 'phase2WhiteTurn',
-          cond: (context: GameContext) => !arePlaceablePiecesInTrays(context),
-        },
-        'phase1WhiteTurn',
-      ],
-    },
-    phase1BlackCapturePiece: {
-      type: 'final',
-    },
-    phase1WhiteTurn: {
-      on: {
-        PLACE: {target: 'phase1WhiteTurnPlaced', actions: [assign(placePiece)]},
-      },
-      meta: {
-        canMoveWhiteTray: true,
-      },
-    },
-    phase1WhiteTurnPlaced: {
-      always: [
-        {
-          target: 'phase1WhiteCapturePiece',
-          cond: (context: GameContext) =>
-            areThreeInARow({context, color: WHITE}),
-        },
-        {
-          target: 'phase2BlackTurn',
-          cond: (context: GameContext) => !arePlaceablePiecesInTrays(context),
-        },
-        'phase1BlackTurn',
-      ],
-    },
-    phase1WhiteCapturePiece: {
-      type: 'final',
-    },
-    phase2BlackTurn: {
-      type: 'final',
-    },
-    phase2WhiteTurn: {
-      type: 'final',
+    guards: {
+      currentPlayerHasThreeInARow: (context: GameContext, _, {state}) =>
+        areThreeInARow({
+          context,
+          color: (flatten1Level(state.meta) as any).currentPlayer,
+        }),
+      noAvailableTrayMoves: (context: GameContext) =>
+        !arePlaceablePiecesInTrays(context),
     },
   },
-});
+);
+
+const flatten1Level = (obj: object): object =>
+  Object.assign({}, ...Object.values(obj));
