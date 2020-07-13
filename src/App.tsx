@@ -51,6 +51,10 @@ const App = () => {
     send('NEW_GAME');
   }, [send]);
 
+  const {canMoveBlackTray = false, canMoveWhiteTray = false} = flatten1Level(
+    machineState.meta,
+  );
+
   const {height: windowHeight, width: windowWidth} = Dimensions.get('window');
   const boardSize = Math.min(windowHeight, windowWidth);
 
@@ -129,7 +133,6 @@ const App = () => {
                 key={pos}
                 onHover={handlePieceHover}
                 onRelease={handlePieceRelease}
-                movable
                 position={pos}
                 xy={board.xyForPosition(pos)}
               />
@@ -155,13 +158,14 @@ const App = () => {
         </View>
         <View style={styles.trayContainer}>
           <PieceTray
-            movable
+            movable={canMoveBlackTray}
             onPieceHover={handlePieceHover}
             onPieceRelease={handlePieceRelease}
             pieces={blackTray}
             prefix="bt"
           />
           <PieceTray
+            movable={canMoveWhiteTray}
             onPieceHover={handlePieceHover}
             onPieceRelease={handlePieceRelease}
             pieces={whiteTray}
@@ -274,3 +278,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
 });
+
+const flatten1Level = (obj) => Object.assign({}, ...Object.values(obj));

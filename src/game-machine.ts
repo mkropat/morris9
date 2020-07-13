@@ -202,6 +202,9 @@ export const gameMachine = Machine<GameState, any, any>({
       on: {
         PLACE: {target: 'phase1BlackTurnPlaced', actions: [assign(placePiece)]},
       },
+      meta: {
+        canMoveBlackTray: true,
+      },
     },
     phase1BlackTurnPlaced: {
       always: [
@@ -222,6 +225,9 @@ export const gameMachine = Machine<GameState, any, any>({
     phase1WhiteTurn: {
       on: {
         PLACE: {target: 'phase1WhiteTurnPlaced', actions: [assign(placePiece)]},
+      },
+      meta: {
+        canMoveWhiteTray: true,
       },
     },
     phase1WhiteTurnPlaced: {
