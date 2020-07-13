@@ -1,6 +1,6 @@
 import BoardQueryer from './BoardQueryer';
 import React, {useRef, useState} from 'react';
-import {Coordinates} from './types';
+import {Coordinates, PieceColor} from './types';
 import {useImmer} from 'use-immer';
 import {
   Dimensions,
@@ -24,9 +24,9 @@ import {
 const boardImage = require('./board.png');
 
 interface GameState {
-  board: Record<string, symbol>;
-  blackTray: symbol[];
-  whiteTray: symbol[];
+  board: Record<string, PieceColor>;
+  blackTray: PieceColor[];
+  whiteTray: PieceColor[];
 }
 
 const defaultGameState: GameState = {
@@ -61,7 +61,7 @@ const defaultGameState: GameState = {
 };
 
 interface PlaceholderState {
-  color: symbol | null;
+  color: PieceColor | null;
   position: string | null;
 }
 
@@ -91,7 +91,7 @@ const App = () => {
     color,
     coordinates,
   }: {
-    color: symbol;
+    color: PieceColor;
     coordinates: Coordinates;
   }) => {
     const hoverPosition = getSelectedPosition({
@@ -109,7 +109,7 @@ const App = () => {
     color,
     position,
   }: {
-    color: symbol;
+    color: PieceColor;
     position: string;
   }) => {
     setPlaceholderState({color, position: null});
@@ -227,7 +227,7 @@ const PieceTray = ({
   movable?: boolean;
   onPieceHover: HoverCallback;
   onPieceRelease: ReleaseCallback;
-  pieces: symbol[];
+  pieces: PieceColor[];
   prefix: string;
 }) => {
   return (
@@ -281,7 +281,7 @@ const getSelectedPosition = ({
   return distance < pieceSnapDistancePx ? emptyPosition : null;
 };
 
-const getPositionColor = (state: GameState, position: string): symbol => {
+const getPositionColor = (state: GameState, position: string): PieceColor => {
   const i = parseInt(position.replace(/\D/g, ''), 10);
   const {blackTray, board, whiteTray} = state;
 
@@ -299,7 +299,7 @@ const setPosition = ({
   state,
   position,
 }: {
-  color: symbol;
+  color: PieceColor;
   state: GameState;
   position: string;
 }) => {

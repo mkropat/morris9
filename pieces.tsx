@@ -8,7 +8,7 @@ import {
   StyleSheet,
   ViewStyle,
 } from 'react-native';
-import {Coordinates} from './types';
+import {Coordinates, PieceColor} from './types';
 import {BLACK, CANCEL, WHITE} from './symbols';
 
 const colorToImage: Map<symbol, any> = new Map([
@@ -35,13 +35,13 @@ interface PieceParams {
 }
 
 export type HoverCallback = ({}: {
-  color: symbol;
+  color: PieceColor;
   coordinates: Coordinates;
   position: string;
 }) => void;
 
 export type ReleaseCallback = ({}: {
-  color: symbol;
+  color: PieceColor;
   position: string;
 }) => symbol | void;
 
@@ -53,7 +53,7 @@ export const Piece = ({
   onRelease = () => {},
   placeholder,
   xy,
-}: PieceParams & {color: symbol}) => {
+}: PieceParams & {color: PieceColor}) => {
   const onHoverRef = useRef(onHover);
   onHoverRef.current = onHover;
 
