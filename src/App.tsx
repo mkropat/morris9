@@ -1,7 +1,6 @@
 import BoardQueryer from './BoardQueryer';
-import React, {useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {Coordinates, PieceColor} from './types';
-import {useImmer} from 'use-immer';
 import {
   Dimensions,
   Image,
@@ -11,7 +10,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import {BLACK, CANCEL, EMPTY, WHITE} from './symbols';
+import {CANCEL, EMPTY} from './symbols';
 import {
   BlackPiece,
   Piece,
@@ -20,47 +19,12 @@ import {
   HoverCallback,
   ReleaseCallback,
 } from './pieces';
+import {useMachine} from '@xstate/react';
+import {gameMachine} from './game-machine';
 
 const boardImage = require('../assets/board.png');
 
-interface GameState {
-  board: Record<string, PieceColor>;
-  blackTray: PieceColor[];
-  whiteTray: PieceColor[];
-}
-
-const defaultGameState: GameState = {
-  board: {
-    a1: EMPTY,
-    d1: EMPTY,
-    g1: EMPTY,
-    b2: EMPTY,
-    d2: EMPTY,
-    f2: EMPTY,
-    c3: EMPTY,
-    d3: EMPTY,
-    e3: EMPTY,
-    a4: EMPTY,
-    b4: EMPTY,
-    c4: EMPTY,
-    e4: EMPTY,
-    f4: EMPTY,
-    g4: EMPTY,
-    c5: EMPTY,
-    d5: EMPTY,
-    e5: EMPTY,
-    b6: EMPTY,
-    d6: EMPTY,
-    f6: EMPTY,
-    a7: EMPTY,
-    d7: EMPTY,
-    g7: EMPTY,
-  },
-  blackTray: [BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK],
-  whiteTray: [WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE],
-};
-
-interface PlaceholderState {
+interface PieceState {
   color: PieceColor | null;
   position: string | null;
 }
@@ -68,13 +32,24 @@ interface PlaceholderState {
 const App = () => {
   const boardRef = useRef(null);
   const boardPosition = useRef({x: 0, y: 0}).current;
-  const [{board: boardState, blackTray, whiteTray}, updateGameState] = useImmer(
-    defaultGameState,
-  );
+
+  const [machineState, send, service] = useMachine(gameMachine);
+  useEffect(() => {
+    const subscription = service.subscribe((state) => {
+      console.log(state.value, JSON.stringify(state.context, null, 2));
+    });
+
+    return subscription.unsubscribe;
+  }, [service]);
+
+  const {board: boardState, blackTray, whiteTray} = machineState.context;
   const [
     {color: placeholderColor, position: placeholderPosition},
     setPlaceholderState,
-  ] = useState<PlaceholderState>({color: null, position: null});
+  ] = useState<PieceState>({color: null, position: null});
+  useEffect(() => {
+    send('NEW_GAME');
+  }, [send]);
 
   const {height: windowHeight, width: windowWidth} = Dimensions.get('window');
   const boardSize = Math.min(windowHeight, windowWidth);
@@ -117,17 +92,10 @@ const App = () => {
     const from = position;
     const to = hoverPositionRef.current;
     if (from && to) {
-      updateGameState((draftState) => {
-        setPosition({
-          state: draftState,
-          color: getPositionColor(draftState, from),
-          position: to,
-        });
-        setPosition({
-          state: draftState,
-          color: EMPTY,
-          position: from,
-        });
+      send({
+        type: 'PLACE',
+        from,
+        to,
       });
       return CANCEL;
     }
@@ -279,39 +247,6 @@ const getSelectedPosition = ({
 }): string | null => {
   const {distance, position: emptyPosition} = board.nearestEmpty(coordinates);
   return distance < pieceSnapDistancePx ? emptyPosition : null;
-};
-
-const getPositionColor = (state: GameState, position: string): PieceColor => {
-  const i = parseInt(position.replace(/\D/g, ''), 10);
-  const {blackTray, board, whiteTray} = state;
-
-  if (position.startsWith('bt')) {
-    return blackTray[i];
-  }
-  if (position.startsWith('wt')) {
-    return whiteTray[i];
-  }
-  return board[position];
-};
-
-const setPosition = ({
-  color,
-  state,
-  position,
-}: {
-  color: PieceColor;
-  state: GameState;
-  position: string;
-}) => {
-  const i = parseInt(position.replace(/\D/g, ''), 10);
-
-  if (position.startsWith('bt')) {
-    state.blackTray[i] = color;
-  } else if (position.startsWith('wt')) {
-    state.whiteTray[i] = color;
-  } else {
-    state.board[position] = color;
-  }
 };
 
 const styles = StyleSheet.create({

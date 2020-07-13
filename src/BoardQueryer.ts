@@ -1,6 +1,7 @@
 import {BLACK, EMPTY, WHITE} from './symbols';
-import {Coordinates} from './types';
+import {Coordinates, PieceColor} from './types';
 import {addCoordinates, getDistance} from './coordinates';
+import {BoardPosition, parsePosition} from './game-machine';
 
 const boardHorizontalMarginPx = 60;
 const boardVerticalMarginPx = 57;
@@ -11,7 +12,7 @@ const boardPositionSpacingPx = 117;
 class BoardQueryer {
   _numVerticalPositions?: number;
   _offset: Coordinates;
-  _state: Record<string, symbol>;
+  _state: Record<string, PieceColor>;
   _size: number;
   _xyCache: Record<string, Coordinates> = {};
 
@@ -22,7 +23,7 @@ class BoardQueryer {
   }: {
     boardPosition: Coordinates;
     boardSize: number;
-    boardState: Record<string, symbol>;
+    boardState: Record<string, PieceColor>;
   }) {
     this._offset = boardPosition;
     this._size = boardSize;
@@ -87,7 +88,7 @@ class BoardQueryer {
     return this._xyCache[position];
   }
 
-  _getPositionByValue(value: symbol) {
+  _getPositionByValue(value: PieceColor) {
     return Object.entries(this._state)
       .filter(([, positionValue]) => positionValue === value)
       .map(([position]) => position);
@@ -96,9 +97,7 @@ class BoardQueryer {
 
 export default BoardQueryer;
 
-const alphabet = 'abcdefghijklmnopqrstuvwxyz';
-
 const positionToLogicalXy = (position: string): Coordinates => {
-  const [col, row] = position;
-  return {x: alphabet.indexOf(col), y: parseInt(row, 10) - 1};
+  const {col, row} = parsePosition(position) as BoardPosition;
+  return {x: col, y: row};
 };
